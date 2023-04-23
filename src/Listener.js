@@ -39,16 +39,21 @@ const Listeners = {
     // Marketplace Smart contract
     marketPlaceSC.on(
       "SellToken",
-      (collection, tokenId, amount, price, isDollar, seller) => {
-        let hex = amount.hex;
+      (collection, tokenId, amount, price, isDollar, seller, extraData) => {
+        const { transactionHash, blockNumber } = extraData;
+        const { _hex } = amount;
+        let amountDecimals = parseInt(_hex, 16);
+
         const eventData = {
           eventName: "SellToken",
           collectionNFT: collection,
           tokenId: tokenId,
-          amount: parseInt(hex, 16),
+          amount: amountDecimals,
           price: ethers.utils.parseEther(price),
           isDollar: isDollar,
           seller: seller,
+          transactionHash: transactionHash,
+          blockNumber: blockNumber,
         };
 
         axios
@@ -74,20 +79,26 @@ const Listeners = {
         sellerRevenue,
         royalties,
         seller,
-        buyer
+        buyer,
+        extraData
       ) => {
-        let hex = amount.hex;
+        const { transactionHash, blockNumber } = extraData;
+
+        const { _hex } = amount;
+        let amountDecimals = parseInt(_hex, 16);
 
         const eventData = {
           eventName: "BuyToken",
           collectionNFT: collection,
           tokenId: tokenId,
-          amount: parseInt(hex, 16),
+          amount: amountDecimals,
           price: ethers.utils.parseEther(price),
           sellerRevenue: sellerRevenue,
           royalties: royalties,
           seller: seller,
           buyer: buyer,
+          transactionHash: transactionHash,
+          blockNumber: blockNumber,
         };
 
         axios
@@ -103,32 +114,43 @@ const Listeners = {
   },
 
   async ListenerMarketPlaceRemoveToken() {
-    marketPlaceSC.on("RemoveToken", (collection, tokenId, seller) => {
-      const eventData = {
-        eventName: "Removetoken",
-        collection: collection,
-        tokenId: tokenId,
-        seller: seller,
-      };
+    marketPlaceSC.on(
+      "RemoveToken",
+      (collection, tokenId, seller, extraData) => {
+        const { transactionHash, blockNumber } = extraData;
 
-      axios
-        .post(`${endPointPostEvents}RemoveToken/`, eventData)
-        .then((response) => {
-          console.log("You posted a Removed token!");
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    });
+        const eventData = {
+          eventName: "Removetoken",
+          collection: collection,
+          tokenId: tokenId,
+          seller: seller,
+          transactionHash: transactionHash,
+          blockNumber: blockNumber,
+        };
+
+        axios
+          .post(`${endPointPostEvents}RemoveToken/`, eventData)
+          .then((response) => {
+            console.log("You posted a Removed token!");
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      }
+    );
   },
   async ListenerSkillTransfer() {
     // Skill Smart contract
-    skillSC.on("Transfer", (from, to, tokenId) => {
+    skillSC.on("Transfer", (from, to, tokenId, extraData) => {
+      const { transactionHash, blockNumber } = extraData;
+
       const eventData = {
         eventName: "Transfer",
         from: from,
         to: to,
         tokenId: tokenId,
+        transactionHash: transactionHash,
+        blockNumber: blockNumber,
       };
 
       axios
@@ -144,12 +166,16 @@ const Listeners = {
   },
   async ListenerSkinTransfer() {
     // Skin Smart contract
-    skinSC.on("Transfer", (from, to, tokenId) => {
+    skinSC.on("Transfer", (from, to, tokenId, extraData) => {
+      const { transactionHash, blockNumber } = extraData;
+
       const eventData = {
         eventName: "Transfer",
         from: from,
         to: to,
         tokenId: tokenId,
+        transactionHash: transactionHash,
+        blockNumber: blockNumber,
       };
 
       axios

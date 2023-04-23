@@ -19,17 +19,21 @@ async function ListenerTransferTestBUSD() {
   // Events list to listen to:
 
   // BUSD Smart contract
-  BUSD.on("Transfer", (event) => {
-    // let amountHex = amount.hex;
-    // const eventData = {
-    //   eventName: "Transfer",
-    //   from: from,
-    //   to: to,
-    //   amount: parseInt(amountHex, 16),
-    // };
+  BUSD.on("Transfer", (from, to, amount, extraData) => {
+    const { _hex } = amount;
+    const { transactionHash, blockNumber } = extraData;
+    let amountDecimals = parseInt(_hex, 16);
+    const eventData = {
+      eventName: "Transfer",
+      from: from,
+      to: to,
+      amount: amountDecimals,
+      transactionHash: transactionHash,
+      blockNumber: blockNumber,
+    };
 
     axios
-      .post(`${endPointPostEvents}Transfer/`, event, {
+      .post(`${endPointPostEvents}Transfer/`, eventData, {
         // headers: { "Content-Type": "application/json" },
       })
       .then((response) => {
