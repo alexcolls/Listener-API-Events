@@ -2,16 +2,19 @@ require("dotenv").config();
 const ethers = require("ethers");
 const axios = require("axios");
 const Contract = require("./utils/Contract");
+const { myprog } = require("../MailGun/sendInfoMail");
 
 // URL to POST events
-const endPointPostEvents = process.env.URL_POST_EVENTS;
+const endPointPostEvents = process.env.API_URL;
 
 // Instance provider
 const provider = new ethers.providers.JsonRpcProvider(
-  `${process.env.INFURA_TESTNET_API}`
+  `${process.env.PROVIDER_TESTNET_HTTPS}`
 );
 
-// Smart Contracts
+const signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+
+// Instance Smart Contracts
 const marketPlaceSC = new ethers.Contract(
   process.env.MARKETPLACE_ADDRESS,
   Contract.getABI("marketplace"),
@@ -39,8 +42,8 @@ const Listeners = {
     // Marketplace Smart contract
     marketPlaceSC.on(
       "SellToken",
-      (collection, tokenId, amount, price, isDollar, seller, extraData) => {
-        const { transactionHash, blockNumber } = extraData;
+      async (collection, tokenId, amount, price, isDollar, seller, event) => {
+        const { transactionHash, blockNumber } = event;
         const { _hex } = amount;
         let amountDecimals = parseInt(_hex, 16);
 
@@ -55,15 +58,38 @@ const Listeners = {
           transactionHash: transactionHash,
           blockNumber: blockNumber,
         };
+        console.log(eventData);
 
-        axios
-          .post(`${endPointPostEvents}SellToken/`, eventData)
-          .then((response) => {
-            console.log("You posted a listing!");
-          })
-          .catch((error) => {
-            console.log(error);
-          });
+        try {
+          const response = await axios.post(
+            `${endPointPostEvents}SellToken/`,
+            eventData
+          );
+
+          if (response.status == "200") {
+            console.log("You posted a SellToken!");
+          } else {
+            console.log(
+              "Failed to post SellToken. Status code:",
+              response.status
+            );
+          }
+        } catch (error) {
+          console.error("Error posting event data:", error);
+          const data = {
+            from: "gamesforaliving@g4al.com",
+            to: "cricharte@g4al.com",
+            subject: "(New event) SellToken Error",
+            text: `${error}`,
+          };
+          myprog.sendInfoMail(
+            data.subject,
+            data.text,
+            data.from,
+            data.to,
+            data.subject
+          );
+        }
       }
     );
   },
@@ -71,7 +97,7 @@ const Listeners = {
   async ListenerMarketPlaceBuyToken() {
     marketPlaceSC.on(
       "BuyToken",
-      (
+      async (
         collection,
         tokenId,
         amount,
@@ -80,9 +106,9 @@ const Listeners = {
         royalties,
         seller,
         buyer,
-        extraData
+        event
       ) => {
-        const { transactionHash, blockNumber } = extraData;
+        const { transactionHash, blockNumber } = event;
 
         const { _hex } = amount;
         let amountDecimals = parseInt(_hex, 16);
@@ -100,15 +126,38 @@ const Listeners = {
           transactionHash: transactionHash,
           blockNumber: blockNumber,
         };
+        console.log(eventData);
 
-        axios
-          .post(`${endPointPostEvents}BuyToken/`, eventData)
-          .then((response) => {
-            console.log("You posted a purchase!");
-          })
-          .catch((error) => {
-            console.log(error);
-          });
+        try {
+          const response = await axios.post(
+            `${endPointPostEvents}BuyToken/`,
+            eventData
+          );
+
+          if (response.status === 200) {
+            console.log("You posted a BuyToken!");
+          } else {
+            console.log(
+              "Failed to post BuyToken. Status code:",
+              response.status
+            );
+          }
+        } catch (error) {
+          console.error("Error posting event data:", error);
+          const data = {
+            from: "gamesforaliving@g4al.com",
+            to: "cricharte@g4al.com",
+            subject: "(New event) BuyToken Error",
+            text: `${error}`,
+          };
+          myprog.sendInfoMail(
+            data.subject,
+            data.text,
+            data.from,
+            data.to,
+            data.subject
+          );
+        }
       }
     );
   },
@@ -116,8 +165,8 @@ const Listeners = {
   async ListenerMarketPlaceRemoveToken() {
     marketPlaceSC.on(
       "RemoveToken",
-      (collection, tokenId, seller, extraData) => {
-        const { transactionHash, blockNumber } = extraData;
+      async (collection, tokenId, seller, event) => {
+        const { transactionHash, blockNumber } = event;
 
         const eventData = {
           eventName: "Removetoken",
@@ -128,67 +177,128 @@ const Listeners = {
           blockNumber: blockNumber,
         };
 
-        axios
-          .post(`${endPointPostEvents}RemoveToken/`, eventData)
-          .then((response) => {
-            console.log("You posted a Removed token!");
-          })
-          .catch((error) => {
-            console.log(error);
-          });
+        console.log(eventData);
+
+        try {
+          //TODO: DELETE  where?
+          const response = await axios.delete(
+            `${endPointPostEvents}Removetoken/`,
+            eventData
+          );
+
+          if (response.status === 200) {
+            console.log("You posted a RemoveToken!");
+          } else {
+            console.log(
+              "Failed to post RemoveToken. Status code:",
+              response.status
+            );
+          }
+        } catch (error) {
+          console.error("Error posting event data:", error);
+          const data = {
+            from: "gamesforaliving@g4al.com",
+            to: "cricharte@g4al.com",
+            subject: "(New event) RemoveToken Error",
+            text: `${error}`,
+          };
+          myprog.sendInfoMail(
+            data.subject,
+            data.text,
+            data.from,
+            data.to,
+            data.subject
+          );
+        }
       }
     );
   },
   async ListenerSkillTransfer() {
     // Skill Smart contract
-    skillSC.on("Transfer", (from, to, tokenId, extraData) => {
-      const { transactionHash, blockNumber } = extraData;
+    skillSC.on("Transfer", async (from, to, tokenId, event) => {
+      const Sale = await marketPlaceSC.getOnSaleTokenIds(
+        skillSC.address, //SC address
+        parseInt(tokenId, 16), // From tokenID
+        from // Seller address
+      );
 
-      const eventData = {
-        eventName: "Transfer",
-        from: from,
-        to: to,
-        tokenId: tokenId,
-        transactionHash: transactionHash,
-        blockNumber: blockNumber,
-      };
+      console.log("Transfer found in Skill!");
 
-      axios
-        .post(`${endPointPostEvents}Transfer/`, eventData)
-        .then((response) => {
-          console.log("You posted a removeToken!");
-          // TODO: This should call the function removeToken() from listing
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+      // Check if the transfer is because of minting a new token (Sender is 0x)
+      if (from !== "0x0000000000000000000000000000000000000000") {
+        // Check if the amount is 0 (It means there is not any token on sale)
+        if (Sale.amount._hex !== "0x00") {
+          try {
+            console.log(`Token found in Sale! `, Sale);
+            await marketPlaceSC
+              .connect(signer)
+              .removeToken(skillSC.address, parseInt(tokenId, 16));
+          } catch (error) {
+            console.error(
+              `Error Removing Token from Sale after listening "Transfer: "`,
+              error
+            );
+            const data = {
+              from: "gamesforaliving@g4al.com",
+              to: "cricharte@g4al.com",
+              subject: `(New event) Error Removing Token from Sale after listening Skill - "Transfer Event"`,
+              text: `${error}`,
+            };
+            myprog.sendInfoMail(
+              data.subject,
+              data.text,
+              data.from,
+              data.to,
+              data.subject
+            );
+          }
+        }
+      }
     });
   },
   async ListenerSkinTransfer() {
     // Skin Smart contract
-    skinSC.on("Transfer", (from, to, tokenId, extraData) => {
-      const { transactionHash, blockNumber } = extraData;
+    skinSC.on("Transfer", async (from, to, tokenId, event) => {
+      const Sale = await marketPlaceSC.getOnSaleTokenIds(
+        skinSC.address, //SC address
+        parseInt(tokenId, 16), // From tokenID
+        from // Seller address
+      );
 
-      const eventData = {
-        eventName: "Transfer",
-        from: from,
-        to: to,
-        tokenId: tokenId,
-        transactionHash: transactionHash,
-        blockNumber: blockNumber,
-      };
+      console.log("Transfer found in Skin!");
 
-      axios
-        .post(`${endPointPostEvents}Transfer/`, eventData)
-        .then((response) => {
-          console.log("You posted a removeToken!");
-          // TODO: This should call the function removeToken() from listing
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+      // Check if the transfer is because of minting a new token (Sender is 0x)
+      if (from !== "0x0000000000000000000000000000000000000000") {
+        // Check if the amount is 0 (It means there is not any token on sale)
+        if (Sale.amount._hex !== "0x00") {
+          try {
+            console.log(`Token found in Sale! `, Sale);
+            await marketPlaceSC
+              .connect(signer)
+              .removeToken(skinSC.address, parseInt(tokenId, 16));
+          } catch (error) {
+            console.error(
+              `Error Removing Token from Sale after listening "Transfer: "`,
+              error
+            );
+            const data = {
+              from: "gamesforaliving@g4al.com",
+              to: "cricharte@g4al.com",
+              subject: `(New event) Error Removing Token from Sale after listening Skin - "Transfer Event"`,
+              text: `${error}`,
+            };
+            myprog.sendInfoMail(
+              data.subject,
+              data.text,
+              data.from,
+              data.to,
+              data.subject
+            );
+          }
+        }
+      }
     });
   },
 };
 
-module.exports = Listeners;
+module.exports = { Listeners };
