@@ -47,7 +47,7 @@ const Listeners = {
         const { _hex } = amount;
         let amountDecimals = parseInt(_hex, 16);
 
-        const eventData = {
+        let eventData = {
           eventName: "SellToken",
           collectionNFT: collection,
           tokenId: tokenId,
@@ -61,7 +61,7 @@ const Listeners = {
         console.log(eventData);
 
         try {
-          const response = await axios.post(
+          let response = await axios.post(
             `${endPointPostEvents}SellToken/`,
             eventData
           );
@@ -76,7 +76,7 @@ const Listeners = {
           }
         } catch (error) {
           console.error("Error posting event data:", error);
-          const data = {
+          let data = {
             from: "gamesforaliving@g4al.com",
             to: "cricharte@g4al.com",
             subject: "(New event) SellToken Error",
@@ -113,7 +113,7 @@ const Listeners = {
         const { _hex } = amount;
         let amountDecimals = parseInt(_hex, 16);
 
-        const eventData = {
+        let eventData = {
           eventName: "BuyToken",
           collectionNFT: collection,
           tokenId: tokenId,
@@ -129,7 +129,7 @@ const Listeners = {
         console.log(eventData);
 
         try {
-          const response = await axios.post(
+          let response = await axios.post(
             `${endPointPostEvents}BuyToken/`,
             eventData
           );
@@ -144,7 +144,7 @@ const Listeners = {
           }
         } catch (error) {
           console.error("Error posting event data:", error);
-          const data = {
+          let data = {
             from: "gamesforaliving@g4al.com",
             to: "cricharte@g4al.com",
             subject: "(New event) BuyToken Error",
@@ -168,8 +168,8 @@ const Listeners = {
       async (collection, tokenId, seller, event) => {
         const { transactionHash, blockNumber } = event;
 
-        const eventData = {
-          eventName: "Removetoken",
+        let eventData = {
+          eventName: "RemoveToken",
           collection: collection,
           tokenId: tokenId,
           seller: seller,
@@ -181,7 +181,7 @@ const Listeners = {
 
         try {
           //TODO: DELETE  where?
-          const response = await axios.delete(
+          let response = await axios.delete(
             `${endPointPostEvents}Removetoken/`,
             eventData
           );
@@ -196,7 +196,7 @@ const Listeners = {
           }
         } catch (error) {
           console.error("Error posting event data:", error);
-          const data = {
+          let data = {
             from: "gamesforaliving@g4al.com",
             to: "cricharte@g4al.com",
             subject: "(New event) RemoveToken Error",
@@ -238,7 +238,7 @@ const Listeners = {
               `Error Removing Token from Sale after listening "Transfer: "`,
               error
             );
-            const data = {
+            let data = {
               from: "gamesforaliving@g4al.com",
               to: "cricharte@g4al.com",
               subject: `(New event) Error Removing Token from Sale after listening Skill - "Transfer Event"`,
@@ -281,7 +281,7 @@ const Listeners = {
               `Error Removing Token from Sale after listening "Transfer: "`,
               error
             );
-            const data = {
+            let data = {
               from: "gamesforaliving@g4al.com",
               to: "cricharte@g4al.com",
               subject: `(New event) Error Removing Token from Sale after listening Skin - "Transfer Event"`,

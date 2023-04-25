@@ -14,8 +14,24 @@ const app = express();
 
 const endPointPostEvents = process.env.API_URL;
 
-app.post(`/Transfer/`, (req, res) => {
-  console.log("Event received");
+// app.post(`/Transfer/`, (req, res) => {
+//   console.log("Event received");
+//   // console.log(req);
+//   // console.log(res);
+// });
+app.post(`/BuyToken/`, (req, res) => {
+  console.log("BuyToken Event received POST");
+  // console.log(req);
+  // console.log(res);
+});
+app.post(`/SellToken/`, (req, res) => {
+  console.log("SellToken Event received POST");
+  // console.log(req);
+  // console.log(res);
+});
+
+app.delete(`/RemoveToken/`, (req, res) => {
+  console.log("SellToken Event received POST");
   // console.log(req);
   // console.log(res);
 });
